@@ -32,12 +32,16 @@ try:
         # Rewind the stream, open it as an image with PIL and do some
         # processing on it
         image_stream.seek(0)
-        image = np.asarray(Image.open(image_stream))
+        img = np.asarray(Image.open(image_stream))
         # print('Image is %dx%d' % image.size)
 
+        image = np.zeros(img.shape)
+        image[:, :, 0] = img[:, :, 0] / 255.0
+        image[:, :, 1] = img[:, :, 1] / 255.0
+        image[:, :, 2] = img[:, :, 2] / 255.0
         cv2.imshow("image", image)
         print(image.shape)
-        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2GRAY)
         print(gray.shape)
         faces = detector(gray, 1)
         print(faces)
