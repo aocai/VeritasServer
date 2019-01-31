@@ -1,0 +1,59 @@
+import io
+import socket
+import struct
+import dlib
+import cv2
+import numpy as np
+from PIL import Image
+
+predictor_path = 'shape_predictor_68_face_landmarks.dat'
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor(predictor_path)
+
+# Start a socket listening for connections on 0.0.0.0:8000 (0.0.0.0 means
+# all interfaces)
+server_socket = socket.socket()
+server_socket.bind(('0.0.0.0', 8000))
+server_socket.listen(0)
+
+# Accept a single connection and make a file-like object out of it
+connection = server_socket.accept()[0].makefile('rb')
+try:
+    while True:
+        # Read the length of the image as a 32-bit unsigned int. If the
+        # length is zero, quit the loop
+        image_len = struct.unpack('<L', connection.read(struct.calcsize('<L')))[0]
+        if not image_len:
+            break
+        # Construct a stream to hold the image data and read the image
+        # data from the connection
+        image_stream = io.BytesIO()
+        image_stream.write(connection.read(image_len))
+        # Rewind the stream, open it as an image with PIL and do some
+        # processing on it
+        image_stream.seek(0)
+        image = np.asarray(Image.open(image_stream))
+        # print('Image is %dx%d' % image.size)
+
+        cv2.imshow("image", image)
+        print(image.shape)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        print(gray.shape)
+        faces = detector(gray, 1)
+        print(faces)
+        for _, d in enumerate(faces):
+            # d is array of two corner coordinates for face bounding box
+            # shape has 68 parts, the 68 landmarks
+            shape = predictor(image, d)
+            for i in range(0, 68):
+                x = shape.part(i).x
+                y = shape.part(i).y
+                cv2.circle(image, (x, y), 3, (0, 150, 255))
+                print("ran once")
+
+
+        #image.verify()
+        #print('Image is verified')
+finally:
+    connection.close()
+    server_socket.close()
