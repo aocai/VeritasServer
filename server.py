@@ -18,6 +18,7 @@ server_socket.listen(0)
 
 # Accept a single connection and make a file-like object out of it
 connection = server_socket.accept()[0].makefile('rb')
+image_stream = io.BytesIO()
 try:
     while True:
         # Read the length of the image as a 32-bit unsigned int. If the
@@ -27,37 +28,44 @@ try:
             break
         # Construct a stream to hold the image data and read the image
         # data from the connection
-        image_stream = io.BytesIO()
+        
         image_stream.write(connection.read(image_len))
         # Rewind the stream, open it as an image with PIL and do some
         # processing on it
         image_stream.seek(0)
         img = np.asarray(Image.open(image_stream))
+        # print(img[0])
+        # print(img[0][0][0].dtype)
+        # print(img.dtype)
+		
+        # file_bytes = np.asarray(bytearray(image_stream.read()), dtype=np.uint8)
+        # img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        # cv2.imshow("image", img)
+		
         # print('Image is %dx%d' % image.size)
 
-        image = np.zeros(img.shape)
-        image[:, :, 0] = img[:, :, 0] / 255.0
-        image[:, :, 1] = img[:, :, 1] / 255.0
-        image[:, :, 2] = img[:, :, 2] / 255.0
-        cv2.imshow("image", image)
-        print(image.shape)
-        gray = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2GRAY)
-        print(gray.shape)
+        # image = np.zeros(img.shape)
+        # image[:, :, 0] = img[:, :, 0] / 255.0
+        # image[:, :, 1] = img[:, :, 1] / 255.0
+        # image[:, :, 2] = img[:, :, 2] / 255.0
+        # cv2.imshow("image", image)
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        print(gray)
         faces = detector(gray, 1)
-        print(faces)
-        for _, d in enumerate(faces):
-            # d is array of two corner coordinates for face bounding box
-            # shape has 68 parts, the 68 landmarks
-            shape = predictor(image, d)
-            for i in range(0, 68):
-                x = shape.part(i).x
-                y = shape.part(i).y
-                cv2.circle(image, (x, y), 3, (0, 150, 255))
-                print("ran once")
+        # for _, d in enumerate(faces):
+            ##d is array of two corner coordinates for face bounding box
+            ##shape has 68 parts, the 68 landmarks
+            # shape = predictor(gray, d)
+            # for i in range(0, 68):
+                # x = shape.part(i).x
+                # y = shape.part(i).y
+                # cv2.circle(img, (x, y), 3, (0, 150, 255))
+                # print("ran")
 
-
-        #image.verify()
-        #print('Image is verified')
+        # image_stream.seek(0)
+        # image_stream.truncate()
+        # cv2.imshow("img", img)
+        # cv2.waitKey(1)
 finally:
     connection.close()
     server_socket.close()
